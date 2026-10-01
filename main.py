@@ -128,14 +128,9 @@ def main():
     widget.hide_requested.connect(widget.hide)
     widget.exit_requested.connect(quit_app)
     
-    def show_details_window():
-        local_ip = network_manager.get_local_ip()
-        peers = network_manager.get_active_peers()
-        dialog = DetailsDialog(local_ip, peers)
-        dialog.exec_()
-        
-    widget.show_details_requested.connect(show_details_window)
-
+    # Callback for submenu hover stats
+    widget.set_network_info_callback(lambda: (network_manager.get_local_ip(), network_manager.get_active_peers()))
+    
     widget.show()
     sys.exit(app.exec_())
 
