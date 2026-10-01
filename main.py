@@ -70,6 +70,24 @@ def main():
     tray_icon = QSystemTrayIcon(create_tray_icon(), app)
     tray_menu = QMenu()
     
+    from PyQt5.QtWidgets import QFileDialog
+    
+    def send_via_dialog():
+        file_paths, _ = QFileDialog.getOpenFileNames(None, "Select Files to Send")
+        if file_paths:
+            on_files_dropped(file_paths)
+            
+    def send_folder_dialog():
+        folder_path = QFileDialog.getExistingDirectory(None, "Select Folder to Send")
+        if folder_path:
+            on_files_dropped([folder_path])
+            
+    send_action = QAction("Send File(s)...", app)
+    send_action.triggered.connect(send_via_dialog)
+    
+    send_folder_action = QAction("Send Folder...", app)
+    send_folder_action.triggered.connect(send_folder_dialog)
+    
     show_action = QAction("Show / Hide Widget", app)
     show_action.triggered.connect(lambda: widget.hide() if widget.isVisible() else widget.show())
     
@@ -83,6 +101,10 @@ def main():
     quit_action.triggered.connect(quit_app)
     
     tray_menu.addAction(show_action)
+    tray_menu.addSeparator()
+    tray_menu.addAction(send_action)
+    tray_menu.addAction(send_folder_action)
+    tray_menu.addSeparator()
     tray_menu.addAction(open_folder_action)
     tray_menu.addSeparator()
     tray_menu.addAction(quit_action)
