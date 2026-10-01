@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMess
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtCore import Qt
 
-from ui import DropZoneWidget, DetailsDialog
+from ui import DropZoneWidget
 from network import NetworkManager
 
 def create_tray_icon():
