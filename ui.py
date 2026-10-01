@@ -142,9 +142,9 @@ class DropZoneWidget(QWidget):
         autostart_action.setCheckable(True)
         autostart_action.setChecked(self.autostart_enabled)
         
-        history_action = menu.addAction(QIcon(resource_path("assets/details.svg")), "Transfer History")
+        history_action = menu.addAction(QIcon(resource_path("assets/history.svg")), "Transfer History")
         
-        settings_action = menu.addAction(QIcon(resource_path("assets/details.svg")), "Configure PC Name")
+        settings_action = menu.addAction(QIcon(resource_path("assets/settings.svg")), "Configure PC Name")
         open_folder_action = menu.addAction(QIcon(resource_path("assets/folder.svg")), "Open Downloads Folder")
         menu.addSeparator()
         hide_action = menu.addAction(QIcon(resource_path("assets/hide.svg")), "Hide Main Window")
