@@ -125,6 +125,7 @@ def main():
     
     # Widget Context Menu Bindings
     widget.open_downloads_requested.connect(lambda: os.startfile(download_dir))
+    widget.hide_requested.connect(widget.hide)
     widget.exit_requested.connect(quit_app)
     
     def show_details_window():

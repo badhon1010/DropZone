@@ -9,6 +9,7 @@ class DropZoneWidget(QWidget):
     cancel_clicked = pyqtSignal()
     show_details_requested = pyqtSignal()
     open_downloads_requested = pyqtSignal()
+    hide_requested = pyqtSignal()
     exit_requested = pyqtSignal()
     
     def __init__(self):
@@ -76,10 +77,12 @@ class DropZoneWidget(QWidget):
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
-        menu.setStyleSheet("QMenu { background-color: #2b2b2b; color: white; border: 1px solid #444; } QMenu::item { padding: 5px 20px; } QMenu::item:selected { background-color: #4CAF50; }")
+        # Removed setStyleSheet to allow native OS styling like Traffic Monitor
         
-        details_action = menu.addAction("Show Details")
+        details_action = menu.addAction("Connection Details")
         open_folder_action = menu.addAction("Open Downloads Folder")
+        menu.addSeparator()
+        hide_action = menu.addAction("Hide Main Window")
         menu.addSeparator()
         exit_action = menu.addAction("Exit")
         
@@ -89,6 +92,8 @@ class DropZoneWidget(QWidget):
             self.show_details_requested.emit()
         elif action == open_folder_action:
             self.open_downloads_requested.emit()
+        elif action == hide_action:
+            self.hide_requested.emit()
         elif action == exit_action:
             self.exit_requested.emit()
 
