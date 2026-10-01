@@ -37,7 +37,7 @@ DropZone is a seamless, peer-to-peer file and folder sharing application built w
    ```
 4. Run the application:
    ```bash
-   python main.py
+   python src/main.py
    ```
 
 ## 📦 Building the Executable (.exe)
@@ -45,7 +45,7 @@ DropZone is a seamless, peer-to-peer file and folder sharing application built w
 You can build a standalone Windows executable for DropZone using **PyInstaller**. Run the following command in the project root:
 
 ```bash
-pyinstaller --noconsole --onefile --icon="assets/app_logo.ico" --add-data "assets;assets" main.py
+pyinstaller --noconsole --onefile --icon="assets/app_logo.ico" --add-data "assets;assets" src/main.py
 ```
 
 The compiled `main.exe` will be located in the `dist/` directory.

@@ -210,7 +210,11 @@ def main():
         try:
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
             if enable:
-                winreg.SetValueEx(key, "DropZone", 0, winreg.REG_SZ, f'"{sys.executable}" "{os.path.abspath(__file__)}"')
+                if getattr(sys, 'frozen', False):
+                    cmd = f'"{sys.executable}"'
+                else:
+                    cmd = f'"{sys.executable}" "{os.path.abspath(__file__)}"'
+                winreg.SetValueEx(key, "DropZone", 0, winreg.REG_SZ, cmd)
                 tray_icon.showMessage("Auto-Start Enabled", "DropZone will now run automatically on startup.", QSystemTrayIcon.Information, 2000)
             else:
                 try:
