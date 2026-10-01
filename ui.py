@@ -3,7 +3,7 @@ import os
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
-from PyQt5.QtGui import QPainter, QColor, QFont, QLinearGradient
+from PyQt5.QtGui import QPainter, QColor, QFont
 
 class DropZoneWidget(QWidget):
     files_dropped = pyqtSignal(list)
@@ -21,43 +21,26 @@ class DropZoneWidget(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         
         self.setAcceptDrops(True)
-        self.resize(130, 130)
+        self.resize(120, 120)
         
         layout = QVBoxLayout()
-        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setContentsMargins(10, 10, 10, 10)
         
         self.label = QLabel("DropZone")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("color: #FFFFFF; font-weight: 800; font-family: 'Segoe UI', sans-serif; font-size: 16px; letter-spacing: 1px;")
+        self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
         
         self.status_label = QLabel("0 Peers")
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: #BBBBBB; font-size: 11px; font-family: 'Segoe UI', sans-serif;")
+        self.status_label.setStyleSheet("color: #a0a0a0; font-size: 10px; font-family: Segoe UI, sans-serif;")
         
         self.progress_label = QLabel("")
         self.progress_label.setAlignment(Qt.AlignCenter)
-        self.progress_label.setStyleSheet("color: #4CAF50; font-size: 12px; font-weight: bold; font-family: 'Segoe UI', sans-serif;")
+        self.progress_label.setStyleSheet("color: #4CAF50; font-size: 11px; font-weight: bold; font-family: Segoe UI, sans-serif;")
         self.progress_label.hide()
         
         self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setStyleSheet("""
-            QPushButton {
-                background-color: #E53935;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 4px 10px;
-                font-weight: bold;
-                font-family: 'Segoe UI', sans-serif;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #FF5252;
-            }
-            QPushButton:pressed {
-                background-color: #C62828;
-            }
-        """)
+        self.cancel_button.setStyleSheet("background-color: #f44336; color: white; border: none; border-radius: 4px; padding: 3px 8px; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 10px;")
         self.cancel_button.setCursor(Qt.PointingHandCursor)
         self.cancel_button.hide()
         
@@ -80,14 +63,12 @@ class DropZoneWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Draw gradient background for modern look
-        gradient = QLinearGradient(0, 0, self.width(), self.height())
-        gradient.setColorAt(0.0, QColor(45, 50, 60, 240))
-        gradient.setColorAt(1.0, QColor(25, 30, 35, 240))
+        # Draw a rounded semi-transparent dark rectangle
+        painter.setBrush(QColor(30, 30, 30, 200))
         
-        painter.setBrush(gradient)
-        painter.setPen(QColor(100, 150, 255, 100))
-        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 16, 16)
+        # Border
+        painter.setPen(QColor(100, 100, 100, 150))
+        painter.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 15, 15)
         
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -133,16 +114,16 @@ class DropZoneWidget(QWidget):
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            self.label.setText("Drop Here 🚀")
-            self.label.setStyleSheet("color: #64FFDA; font-weight: 900; font-family: 'Segoe UI', sans-serif; font-size: 16px; letter-spacing: 1px;")
+            self.label.setText("Drop Here!")
+            self.label.setStyleSheet("color: #4CAF50; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
             
     def dragLeaveEvent(self, event):
         self.label.setText("DropZone")
-        self.label.setStyleSheet("color: #FFFFFF; font-weight: 800; font-family: 'Segoe UI', sans-serif; font-size: 16px; letter-spacing: 1px;")
+        self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
 
     def dropEvent(self, event):
         self.label.setText("DropZone")
-        self.label.setStyleSheet("color: #FFFFFF; font-weight: 800; font-family: 'Segoe UI', sans-serif; font-size: 16px; letter-spacing: 1px;")
+        self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
         
         urls = event.mimeData().urls()
         if urls:
@@ -165,14 +146,14 @@ class DropZoneWidget(QWidget):
         self.cancel_button.show()
         self.progress_label.setText(f"{percentage}% | {speed_str}")
         self.label.setText("Transferring...")
-        self.label.setStyleSheet("color: #64FFDA; font-weight: 900; font-family: 'Segoe UI', sans-serif; font-size: 14px;")
+        self.label.setStyleSheet("color: #4CAF50; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 12px;")
         
     def hide_progress(self):
         self.progress_label.hide()
         self.cancel_button.hide()
         self.status_label.show()
         self.label.setText("DropZone")
-        self.label.setStyleSheet("color: #FFFFFF; font-weight: 800; font-family: 'Segoe UI', sans-serif; font-size: 16px; letter-spacing: 1px;")
+        self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
 
 class DetailsDialog(QDialog):
     def __init__(self, local_ip, peers):
