@@ -8,14 +8,8 @@ from ui import DropZoneWidget
 from network import NetworkManager
 
 def create_tray_icon():
-    pixmap = QPixmap(32, 32)
-    pixmap.fill(Qt.transparent)
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing)
-    painter.setBrush(QColor(76, 175, 80))  # Green circle
-    painter.drawEllipse(2, 2, 28, 28)
-    painter.end()
-    return QIcon(pixmap)
+    from ui import resource_path
+    return QIcon(resource_path("assets/app_logo.png"))
 
 def main():
     app = QApplication(sys.argv)

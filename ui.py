@@ -26,6 +26,7 @@ class DropZoneWidget(QWidget):
         
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowIcon(QIcon(resource_path("assets/app_logo.png")))
         
         self.setAcceptDrops(True)
         self.resize(130, 130)
