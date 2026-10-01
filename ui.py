@@ -1,11 +1,12 @@
 import sys
 import os
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QPainter, QColor, QFont
 
 class DropZoneWidget(QWidget):
     files_dropped = pyqtSignal(list)
+    cancel_clicked = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -28,9 +29,23 @@ class DropZoneWidget(QWidget):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet("color: #a0a0a0; font-size: 10px; font-family: Segoe UI, sans-serif;")
         
+        self.progress_label = QLabel("")
+        self.progress_label.setAlignment(Qt.AlignCenter)
+        self.progress_label.setStyleSheet("color: #4CAF50; font-size: 11px; font-weight: bold; font-family: Segoe UI, sans-serif;")
+        self.progress_label.hide()
+        
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setStyleSheet("background-color: #f44336; color: white; border: none; border-radius: 4px; padding: 3px 8px; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 10px;")
+        self.cancel_button.setCursor(Qt.PointingHandCursor)
+        self.cancel_button.hide()
+        
         layout.addWidget(self.label)
         layout.addWidget(self.status_label)
+        layout.addWidget(self.progress_label)
+        layout.addWidget(self.cancel_button, alignment=Qt.AlignCenter)
         self.setLayout(layout)
+        
+        self.cancel_button.clicked.connect(self.cancel_clicked.emit)
         
         self.drag_position = QPoint()
         self.active_peers = []
@@ -84,3 +99,18 @@ class DropZoneWidget(QWidget):
             self.status_label.setStyleSheet("color: #4CAF50; font-size: 11px; font-weight: bold;")
         else:
             self.status_label.setStyleSheet("color: #a0a0a0; font-size: 10px;")
+
+    def show_progress(self, filename, percentage, speed_str):
+        self.status_label.hide()
+        self.progress_label.show()
+        self.cancel_button.show()
+        self.progress_label.setText(f"{percentage}% | {speed_str}")
+        self.label.setText("Transferring...")
+        self.label.setStyleSheet("color: #4CAF50; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 12px;")
+        
+    def hide_progress(self):
+        self.progress_label.hide()
+        self.cancel_button.hide()
+        self.status_label.show()
+        self.label.setText("DropZone")
+        self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")

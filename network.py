@@ -4,6 +4,14 @@ import time
 import os
 from PyQt5.QtCore import QObject, pyqtSignal
 
+def format_speed(bytes_per_sec):
+    if bytes_per_sec >= 1024 * 1024:
+        return f"{bytes_per_sec / (1024 * 1024):.1f} MB/s"
+    elif bytes_per_sec >= 1024:
+        return f"{bytes_per_sec / 1024:.1f} KB/s"
+    else:
+        return f"{bytes_per_sec:.0f} B/s"
+
 UDP_PORT = 5000
 TCP_PORT = 5001
 BROADCAST_INTERVAL = 2  # seconds
@@ -13,10 +21,12 @@ CHUNK_SIZE = 8192
 class NetworkManager(QObject):
     peer_discovered = pyqtSignal(str)
     peer_lost = pyqtSignal(str)
-    transfer_progress = pyqtSignal(str, int)  # filename, percentage
+    transfer_progress = pyqtSignal(str, int, str)  # filename, percentage, speed
     transfer_complete = pyqtSignal(str) # filename
-    receive_progress = pyqtSignal(str, int)
+    transfer_cancelled = pyqtSignal(str)
+    receive_progress = pyqtSignal(str, int, str)
     receive_complete = pyqtSignal(str)
+    receive_cancelled = pyqtSignal(str)
     
     def __init__(self, download_dir):
         super().__init__()
@@ -24,6 +34,10 @@ class NetworkManager(QObject):
         self.peers = {}  # ip: last_seen_time
         
         self.running = True
+        self.cancel_flag = False
+        
+    def cancel_transfers(self):
+        self.cancel_flag = True
         
         # Start UDP Discovery threads
         self.udp_thread = threading.Thread(target=self.udp_discovery_loop, daemon=True)
@@ -137,19 +151,40 @@ class NetworkManager(QObject):
                 counter += 1
                 
             received = 0
+            start_time = time.time()
+            last_update_time = start_time
+            interrupted = False
             with open(save_path, 'wb') as f:
                 while received < file_size:
+                    if self.cancel_flag:
+                        interrupted = True
+                        break
+                        
                     chunk = client_sock.recv(min(CHUNK_SIZE, file_size - received))
                     if not chunk:
+                        interrupted = True
                         break
                     f.write(chunk)
                     received += len(chunk)
                     
                     if file_size > 0:
-                        progress = int((received / file_size) * 100)
-                        self.receive_progress.emit(filename, progress)
-                        
-            self.receive_complete.emit(filename)
+                        current_time = time.time()
+                        if current_time - last_update_time > 0.1 or received == file_size:
+                            elapsed = current_time - start_time
+                            speed = received / elapsed if elapsed > 0 else 0
+                            progress = int((received / file_size) * 100)
+                            self.receive_progress.emit(filename, progress, format_speed(speed))
+                            last_update_time = current_time
+                            
+            if interrupted:
+                self.receive_cancelled.emit(filename)
+                try:
+                    os.remove(save_path)
+                except Exception:
+                    pass
+            else:
+                self.receive_complete.emit(filename)
+            self.cancel_flag = False
         except Exception as e:
             print(f"Error receiving file: {e}")
         finally:
@@ -170,18 +205,34 @@ class NetworkManager(QObject):
                 s.sendall(file_size.to_bytes(8, 'big'))
                 
                 sent = 0
+                start_time = time.time()
+                last_update_time = start_time
+                interrupted = False
                 with open(file_path, 'rb') as f:
                     while True:
+                        if self.cancel_flag:
+                            interrupted = True
+                            break
+                            
                         chunk = f.read(CHUNK_SIZE)
                         if not chunk:
                             break
                         s.sendall(chunk)
                         sent += len(chunk)
                         if file_size > 0:
-                            progress = int((sent / file_size) * 100)
-                            self.transfer_progress.emit(filename, progress)
+                            current_time = time.time()
+                            if current_time - last_update_time > 0.1 or sent == file_size:
+                                elapsed = current_time - start_time
+                                speed = sent / elapsed if elapsed > 0 else 0
+                                progress = int((sent / file_size) * 100)
+                                self.transfer_progress.emit(filename, progress, format_speed(speed))
+                                last_update_time = current_time
                 
-                self.transfer_complete.emit(filename)
+                if interrupted:
+                    self.transfer_cancelled.emit(filename)
+                else:
+                    self.transfer_complete.emit(filename)
+                self.cancel_flag = False
                 s.close()
             except Exception as e:
                 print(f"Error sending file {os.path.basename(file_path)} to {target_ip}: {e}")

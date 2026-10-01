@@ -93,13 +93,35 @@ def main():
     
     # Notifications for file transfers
     def on_transfer_complete(filename):
+        widget.hide_progress()
         tray_icon.showMessage("Transfer Complete", f"Sent: {filename}", QSystemTrayIcon.Information, 2000)
         
     def on_receive_complete(filename):
+        widget.hide_progress()
         tray_icon.showMessage("File Received", f"Received: {filename}", QSystemTrayIcon.Information, 2000)
 
     network_manager.transfer_complete.connect(on_transfer_complete)
     network_manager.receive_complete.connect(on_receive_complete)
+    
+    def on_progress(filename, percentage, speed):
+        widget.show_progress(filename, percentage, speed)
+        
+    network_manager.transfer_progress.connect(on_progress)
+    network_manager.receive_progress.connect(on_progress)
+    
+    # Cancellation bindings
+    widget.cancel_clicked.connect(network_manager.cancel_transfers)
+    
+    def on_transfer_cancelled(filename):
+        widget.hide_progress()
+        tray_icon.showMessage("Transfer Cancelled", f"Cancelled sending: {filename}", QSystemTrayIcon.Warning, 2000)
+        
+    def on_receive_cancelled(filename):
+        widget.hide_progress()
+        tray_icon.showMessage("Transfer Cancelled", f"Cancelled receiving: {filename}", QSystemTrayIcon.Warning, 2000)
+        
+    network_manager.transfer_cancelled.connect(on_transfer_cancelled)
+    network_manager.receive_cancelled.connect(on_receive_cancelled)
 
     widget.show()
     sys.exit(app.exec_())
