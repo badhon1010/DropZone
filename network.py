@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 import os
+import json
 from PyQt5.QtCore import QObject, pyqtSignal
 
 def format_speed(bytes_per_sec):
@@ -19,7 +20,7 @@ PEER_TIMEOUT = 10  # seconds
 CHUNK_SIZE = 8192
 
 class NetworkManager(QObject):
-    peer_discovered = pyqtSignal(str)
+    peer_discovered = pyqtSignal(str, str) # ip, nickname
     peer_lost = pyqtSignal(str)
     transfer_progress = pyqtSignal(str, int, str)  # filename, percentage, speed
     transfer_complete = pyqtSignal(str) # filename
@@ -31,10 +32,34 @@ class NetworkManager(QObject):
     def __init__(self, download_dir):
         super().__init__()
         self.download_dir = download_dir
-        self.peers = {}  # ip: last_seen_time
+        self.peers = {}  # ip: {'last_seen': time, 'nickname': str}
+        
+        self.config_path = os.path.join(download_dir, "config.json")
+        self.nickname = socket.gethostname()
+        self.load_config()
         
         self.running = True
         self.cancel_flag = False
+        
+    def load_config(self):
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r') as f:
+                    data = json.load(f)
+                    self.nickname = data.get("nickname", self.nickname)
+            except:
+                pass
+
+    def save_config(self):
+        try:
+            with open(self.config_path, 'w') as f:
+                json.dump({"nickname": self.nickname}, f)
+        except:
+            pass
+
+    def set_nickname(self, new_name):
+        self.nickname = new_name
+        self.save_config()
         
     def cancel_transfers(self):
         self.cancel_flag = True
@@ -65,7 +90,8 @@ class NetworkManager(QObject):
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while self.running:
             try:
-                s.sendto(b"DROPZONE_HELLO", ("<broadcast>", UDP_PORT))
+                msg = f"DROPZONE_HELLO:{self.nickname}".encode('utf-8')
+                s.sendto(msg, ("<broadcast>", UDP_PORT))
             except Exception:
                 pass
             time.sleep(BROADCAST_INTERVAL)
@@ -87,13 +113,17 @@ class NetworkManager(QObject):
             try:
                 s.settimeout(1.0)
                 data, addr = s.recvfrom(1024)
-                if data == b"DROPZONE_HELLO" and addr[0] != local_ip:
+                if data.startswith(b"DROPZONE_HELLO:") and addr[0] != local_ip:
                     ip = addr[0]
+                    nickname = data.decode('utf-8').split(":", 1)[1]
                     if ip not in self.peers:
-                        self.peers[ip] = time.time()
-                        self.peer_discovered.emit(ip)
+                        self.peers[ip] = {'last_seen': time.time(), 'nickname': nickname}
+                        self.peer_discovered.emit(ip, nickname)
                     else:
-                        self.peers[ip] = time.time()
+                        self.peers[ip]['last_seen'] = time.time()
+                        if self.peers[ip]['nickname'] != nickname:
+                            self.peers[ip]['nickname'] = nickname
+                            self.peer_discovered.emit(ip, nickname) # update ui
             except socket.timeout:
                 pass
             except Exception:
@@ -101,7 +131,7 @@ class NetworkManager(QObject):
             
             # Clean up stale peers
             current_time = time.time()
-            stale_peers = [ip for ip, last_seen in self.peers.items() if current_time - last_seen > PEER_TIMEOUT]
+            stale_peers = [ip for ip, data in self.peers.items() if current_time - data['last_seen'] > PEER_TIMEOUT]
             for ip in stale_peers:
                 del self.peers[ip]
                 self.peer_lost.emit(ip)
@@ -240,7 +270,7 @@ class NetworkManager(QObject):
         threading.Thread(target=_send, daemon=True).start()
 
     def get_active_peers(self):
-        return list(self.peers.keys())
+        return {ip: data['nickname'] for ip, data in self.peers.items()}
 
     def stop(self):
         self.running = False

@@ -130,6 +130,14 @@ def main():
     widget.hide_requested.connect(widget.hide)
     widget.exit_requested.connect(quit_app)
     
+    def open_settings():
+        name, ok = QInputDialog.getText(None, "Configure PC", "Enter PC Nickname:", text=network_manager.nickname)
+        if ok and name.strip():
+            network_manager.set_nickname(name.strip())
+            tray_icon.showMessage("Settings Saved", f"Nickname set to {name.strip()}", QSystemTrayIcon.Information, 2000)
+            
+    widget.settings_requested.connect(open_settings)
+    
     # Callback for submenu hover stats
     widget.set_network_info_callback(lambda: (network_manager.get_local_ip(), network_manager.get_active_peers()))
     
