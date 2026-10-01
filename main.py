@@ -71,6 +71,8 @@ def main():
     tray_menu = QMenu()
     
     from PyQt5.QtWidgets import QFileDialog
+    from PyQt5.QtGui import QIcon
+    from ui import resource_path
     
     def send_via_dialog():
         file_paths, _ = QFileDialog.getOpenFileNames(None, "Select Files to Send")
@@ -82,19 +84,30 @@ def main():
         if folder_path:
             on_files_dropped([folder_path])
             
-    send_action = QAction("Send File(s)...", app)
-    send_action.triggered.connect(send_via_dialog)
-    
-    send_folder_action = QAction("Send Folder...", app)
-    send_folder_action.triggered.connect(send_folder_dialog)
-    
-    show_action = QAction("Show / Hide Widget", app)
+    show_action = QAction(QIcon(resource_path("assets/hide.svg")), "Show / Hide Widget", app)
     show_action.triggered.connect(lambda: widget.hide() if widget.isVisible() else widget.show())
     
-    open_folder_action = QAction("Open Downloads Folder", app)
+    send_action = QAction(QIcon(resource_path("assets/details.svg")), "Send File(s)...", app)
+    send_action.triggered.connect(send_via_dialog)
+    
+    send_folder_action = QAction(QIcon(resource_path("assets/folder.svg")), "Send Folder...", app)
+    send_folder_action.triggered.connect(send_folder_dialog)
+    
+    history_action = QAction(QIcon(resource_path("assets/history.svg")), "Transfer History", app)
+    history_action.triggered.connect(lambda: widget.history_requested.emit())
+    
+    settings_action = QAction(QIcon(resource_path("assets/settings.svg")), "Configure PC Name", app)
+    settings_action.triggered.connect(lambda: widget.settings_requested.emit())
+    
+    autostart_action = QAction("Run on Startup", app)
+    autostart_action.setCheckable(True)
+    # We will set its checked state later when we know is_autostart_enabled()
+    autostart_action.triggered.connect(lambda checked: widget.autostart_requested.emit(checked))
+    
+    open_folder_action = QAction(QIcon(resource_path("assets/folder.svg")), "Open Downloads Folder", app)
     open_folder_action.triggered.connect(lambda: os.startfile(download_dir))
     
-    quit_action = QAction("Exit", app)
+    quit_action = QAction(QIcon(resource_path("assets/exit.svg")), "Exit", app)
     def quit_app():
         network_manager.stop()
         app.quit()
@@ -104,6 +117,10 @@ def main():
     tray_menu.addSeparator()
     tray_menu.addAction(send_action)
     tray_menu.addAction(send_folder_action)
+    tray_menu.addSeparator()
+    tray_menu.addAction(history_action)
+    tray_menu.addAction(settings_action)
+    tray_menu.addAction(autostart_action)
     tray_menu.addSeparator()
     tray_menu.addAction(open_folder_action)
     tray_menu.addSeparator()
@@ -211,8 +228,14 @@ def main():
         except Exception as e:
             QMessageBox.warning(None, "Error", f"Could not change startup settings: {e}")
             
+    def on_autostart_changed(enable):
+        widget.autostart_enabled = enable
+        autostart_action.setChecked(enable)
+        set_autostart(enable)
+
     widget.autostart_enabled = is_autostart_enabled()
-    widget.autostart_requested.connect(set_autostart)
+    autostart_action.setChecked(widget.autostart_enabled)
+    widget.autostart_requested.connect(on_autostart_changed)
     
     # Callback for submenu hover stats
     widget.set_network_info_callback(lambda: (network_manager.get_local_ip(), network_manager.get_active_peers()))
