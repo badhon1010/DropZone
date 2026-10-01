@@ -228,7 +228,7 @@ class NetworkManager(QObject):
         finally:
             client_sock.close()
 
-    def send_file(self, file_path, target_ip):
+    def send_file(self, file_path, target_ip, delete_after=False):
         def _send():
             try:
                 filename = os.path.basename(file_path)
@@ -274,6 +274,12 @@ class NetworkManager(QObject):
                 s.close()
             except Exception as e:
                 print(f"Error sending file {os.path.basename(file_path)} to {target_ip}: {e}")
+            finally:
+                if delete_after:
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
                 
         threading.Thread(target=_send, daemon=True).start()
 

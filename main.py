@@ -47,7 +47,15 @@ def main():
                 return
 
         for path in file_paths:
-            network_manager.send_file(path, target_ip)
+            if os.path.isdir(path):
+                import shutil
+                import tempfile
+                tray_icon.showMessage("Zipping Folder", f"Preparing {os.path.basename(path)}...", QSystemTrayIcon.Information, 1500)
+                zip_path = os.path.join(tempfile.gettempdir(), os.path.basename(path))
+                zip_path = shutil.make_archive(zip_path, 'zip', path)
+                network_manager.send_file(zip_path, target_ip, delete_after=True)
+            else:
+                network_manager.send_file(path, target_ip)
             
     widget.files_dropped.connect(on_files_dropped)
     
@@ -94,13 +102,26 @@ def main():
     tray_icon.activated.connect(on_tray_activated)
     
     # Notifications for file transfers
+    import winsound
+    from datetime import datetime
+    
+    transfer_history = []
+    
     def on_transfer_complete(filename):
         widget.hide_progress()
-        tray_icon.showMessage("Transfer Complete", f"Sent: {filename}", QSystemTrayIcon.Information, 2000)
+        msg = f"Sent: {filename}"
+        tray_icon.showMessage("Transfer Complete", msg, QSystemTrayIcon.Information, 2000)
+        transfer_history.append(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+        try: winsound.MessageBeep(winsound.MB_ICONINFORMATION)
+        except: pass
         
     def on_receive_complete(filename):
         widget.hide_progress()
-        tray_icon.showMessage("File Received", f"Received: {filename}", QSystemTrayIcon.Information, 2000)
+        msg = f"Received: {filename}"
+        tray_icon.showMessage("File Received", msg, QSystemTrayIcon.Information, 2000)
+        transfer_history.append(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+        try: winsound.MessageBeep(winsound.MB_ICONINFORMATION)
+        except: pass
 
     network_manager.transfer_complete.connect(on_transfer_complete)
     network_manager.receive_complete.connect(on_receive_complete)
@@ -125,6 +146,8 @@ def main():
     network_manager.transfer_cancelled.connect(on_transfer_cancelled)
     network_manager.receive_cancelled.connect(on_receive_cancelled)
     
+    widget.history_requested.connect(lambda: __import__('ui').HistoryDialog(transfer_history).exec_())
+    
     # Widget Context Menu Bindings
     widget.open_downloads_requested.connect(lambda: os.startfile(download_dir))
     widget.hide_requested.connect(widget.hide)
@@ -137,6 +160,37 @@ def main():
             tray_icon.showMessage("Settings Saved", f"Nickname set to {name.strip()}", QSystemTrayIcon.Information, 2000)
             
     widget.settings_requested.connect(open_settings)
+    
+    # Autostart feature
+    import winreg
+    
+    def is_autostart_enabled():
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
+            winreg.QueryValueEx(key, "DropZone")
+            winreg.CloseKey(key)
+            return True
+        except FileNotFoundError:
+            return False
+            
+    def set_autostart(enable):
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
+            if enable:
+                winreg.SetValueEx(key, "DropZone", 0, winreg.REG_SZ, f'"{sys.executable}" "{os.path.abspath(__file__)}"')
+                tray_icon.showMessage("Auto-Start Enabled", "DropZone will now run automatically on startup.", QSystemTrayIcon.Information, 2000)
+            else:
+                try:
+                    winreg.DeleteValue(key, "DropZone")
+                except FileNotFoundError:
+                    pass
+                tray_icon.showMessage("Auto-Start Disabled", "DropZone will no longer run on startup.", QSystemTrayIcon.Information, 2000)
+            winreg.CloseKey(key)
+        except Exception as e:
+            QMessageBox.warning(None, "Error", f"Could not change startup settings: {e}")
+            
+    widget.autostart_enabled = is_autostart_enabled()
+    widget.autostart_requested.connect(set_autostart)
     
     # Callback for submenu hover stats
     widget.set_network_info_callback(lambda: (network_manager.get_local_ip(), network_manager.get_active_peers()))
