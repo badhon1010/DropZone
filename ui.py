@@ -1,7 +1,6 @@
 import sys
 import os
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QPainter, QColor, QFont
 
@@ -113,6 +112,7 @@ class DropZoneWidget(QWidget):
         menu.setStyleSheet(menu_style)
         
         details_menu = QMenu("Connection Details", self)
+        details_menu.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
         details_menu.setStyleSheet(menu_style)
         
         if self.network_info_callback:
@@ -127,11 +127,11 @@ class DropZoneWidget(QWidget):
                     
         menu.addMenu(details_menu)
         
-        open_folder_action = menu.addAction("Open Downloads Folder")
+        open_folder_action = menu.addAction(self.style().standardIcon(QStyle.SP_DirIcon), "Open Downloads Folder")
         menu.addSeparator()
-        hide_action = menu.addAction("Hide Main Window")
+        hide_action = menu.addAction(self.style().standardIcon(QStyle.SP_TitleBarMinButton), "Hide Main Window")
         menu.addSeparator()
-        exit_action = menu.addAction("Exit")
+        exit_action = menu.addAction(self.style().standardIcon(QStyle.SP_DialogCloseButton), "Exit")
         
         action = menu.exec_(self.mapToGlobal(event.pos()))
         
