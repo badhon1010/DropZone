@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMess
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtCore import Qt
 
-from ui import DropZoneWidget
+from ui import DropZoneWidget, DetailsDialog
 from network import NetworkManager
 
 def create_tray_icon():
@@ -122,6 +122,18 @@ def main():
         
     network_manager.transfer_cancelled.connect(on_transfer_cancelled)
     network_manager.receive_cancelled.connect(on_receive_cancelled)
+    
+    # Widget Context Menu Bindings
+    widget.open_downloads_requested.connect(lambda: os.startfile(download_dir))
+    widget.exit_requested.connect(quit_app)
+    
+    def show_details_window():
+        local_ip = network_manager.get_local_ip()
+        peers = network_manager.get_active_peers()
+        dialog = DetailsDialog(local_ip, peers)
+        dialog.exec_()
+        
+    widget.show_details_requested.connect(show_details_window)
 
     widget.show()
     sys.exit(app.exec_())

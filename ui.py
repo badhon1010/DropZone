@@ -1,12 +1,15 @@
 import sys
 import os
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QPainter, QColor, QFont
 
 class DropZoneWidget(QWidget):
     files_dropped = pyqtSignal(list)
     cancel_clicked = pyqtSignal()
+    show_details_requested = pyqtSignal()
+    open_downloads_requested = pyqtSignal()
+    exit_requested = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -71,6 +74,24 @@ class DropZoneWidget(QWidget):
             self.move(event.globalPos() - self.drag_position)
             event.accept()
 
+    def contextMenuEvent(self, event):
+        menu = QMenu(self)
+        menu.setStyleSheet("QMenu { background-color: #2b2b2b; color: white; border: 1px solid #444; } QMenu::item { padding: 5px 20px; } QMenu::item:selected { background-color: #4CAF50; }")
+        
+        details_action = menu.addAction("Show Details")
+        open_folder_action = menu.addAction("Open Downloads Folder")
+        menu.addSeparator()
+        exit_action = menu.addAction("Exit")
+        
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        
+        if action == details_action:
+            self.show_details_requested.emit()
+        elif action == open_folder_action:
+            self.open_downloads_requested.emit()
+        elif action == exit_action:
+            self.exit_requested.emit()
+
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
@@ -114,3 +135,35 @@ class DropZoneWidget(QWidget):
         self.status_label.show()
         self.label.setText("DropZone")
         self.label.setStyleSheet("color: white; font-weight: bold; font-family: Segoe UI, sans-serif; font-size: 14px;")
+
+class DetailsDialog(QDialog):
+    def __init__(self, local_ip, peers):
+        super().__init__()
+        self.setWindowTitle("Network Details")
+        self.resize(300, 200)
+        self.setStyleSheet("background-color: #2b2b2b; color: white; font-family: Segoe UI, sans-serif;")
+        
+        # Window settings
+        self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint)
+        
+        layout = QVBoxLayout()
+        
+        form_layout = QFormLayout()
+        ip_label = QLabel(local_ip)
+        ip_label.setStyleSheet("font-weight: bold; color: #4CAF50;")
+        form_layout.addRow("Local IP:", ip_label)
+        layout.addLayout(form_layout)
+        
+        layout.addWidget(QLabel("Active Peers:"))
+        self.peers_list = QListWidget()
+        self.peers_list.setStyleSheet("background-color: #1e1e1e; border: 1px solid #444; border-radius: 4px; padding: 5px;")
+        
+        for peer in peers:
+            self.peers_list.addItem(f"Peer: {peer}")
+            
+        if not peers:
+            self.peers_list.addItem("No other peers found on local network.")
+            self.peers_list.item(0).setForeground(QColor("#a0a0a0"))
+            
+        layout.addWidget(self.peers_list)
+        self.setLayout(layout)
