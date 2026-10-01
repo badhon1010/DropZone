@@ -2,7 +2,7 @@
 
 DropZone is a seamless, peer-to-peer file and folder sharing application built with Python and PyQt5. It allows users to quickly transfer files across a local network simply by dragging and dropping them into a floating widget, without requiring any cloud services or external servers.
 
-![DropZone Logo](assets/app_logo.png)
+*Developed by **Badhon Saha***
 
 ## 🚀 Features
 
