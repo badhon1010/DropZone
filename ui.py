@@ -83,7 +83,38 @@ class DropZoneWidget(QWidget):
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         
+        # Traffic Monitor native style context menu
+        menu_style = """
+            QMenu {
+                background-color: #FFFFFF;
+                border: 1px solid #CCCCCC;
+                padding: 4px 0px;
+                font-family: 'Segoe UI', sans-serif;
+                font-size: 12px;
+                color: #000000;
+            }
+            QMenu::item {
+                padding: 6px 40px 6px 24px;
+                background-color: transparent;
+            }
+            QMenu::item:selected {
+                background-color: #E5F3FF;
+                color: #000000;
+            }
+            QMenu::item:disabled {
+                color: #888888;
+            }
+            QMenu::separator {
+                height: 1px;
+                background-color: #E0E0E0;
+                margin: 4px 0px;
+            }
+        """
+        menu.setStyleSheet(menu_style)
+        
         details_menu = QMenu("Connection Details", self)
+        details_menu.setStyleSheet(menu_style)
+        
         if self.network_info_callback:
             local_ip, peers = self.network_info_callback()
             details_menu.addAction(f"Local IP: {local_ip}").setEnabled(False)
