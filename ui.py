@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QMenu, QDialog, QFormLayout, QListWidget, QStyle
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
-from PyQt5.QtGui import QPainter, QColor, QFont
+from PyQt5.QtGui import QPainter, QColor, QFont, QIcon
 
 class DropZoneWidget(QWidget):
     files_dropped = pyqtSignal(list)
@@ -11,6 +11,7 @@ class DropZoneWidget(QWidget):
     open_downloads_requested = pyqtSignal()
     hide_requested = pyqtSignal()
     exit_requested = pyqtSignal()
+    select_pc_requested = pyqtSignal(str)
     
     def __init__(self):
         super().__init__()
@@ -82,7 +83,6 @@ class DropZoneWidget(QWidget):
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         
-        # Traffic Monitor native style context menu
         menu_style = """
             QMenu {
                 background-color: #FFFFFF;
@@ -93,7 +93,7 @@ class DropZoneWidget(QWidget):
                 color: #000000;
             }
             QMenu::item {
-                padding: 6px 40px 6px 24px;
+                padding: 6px 40px 6px 30px;
                 background-color: transparent;
             }
             QMenu::item:selected {
@@ -112,8 +112,12 @@ class DropZoneWidget(QWidget):
         menu.setStyleSheet(menu_style)
         
         details_menu = QMenu("Connection Details", self)
-        details_menu.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+        details_menu.setIcon(QIcon("assets/details.svg"))
         details_menu.setStyleSheet(menu_style)
+        
+        select_pc_menu = QMenu("Select Target PC", self)
+        select_pc_menu.setIcon(QIcon("assets/pc.svg"))
+        select_pc_menu.setStyleSheet(menu_style)
         
         if self.network_info_callback:
             local_ip, peers = self.network_info_callback()
@@ -121,21 +125,32 @@ class DropZoneWidget(QWidget):
             details_menu.addSeparator()
             if not peers:
                 details_menu.addAction("No peers found").setEnabled(False)
+                select_pc_menu.addAction("No peers available").setEnabled(False)
             else:
                 for p in peers:
                     details_menu.addAction(f"Peer: {p}").setEnabled(False)
                     
+                    action = select_pc_menu.addAction(p)
+                    action.setCheckable(True)
+                    if p == getattr(self, 'selected_target_ip', None):
+                        action.setChecked(True)
+                    
         menu.addMenu(details_menu)
+        menu.addMenu(select_pc_menu)
+        menu.addSeparator()
         
-        open_folder_action = menu.addAction(self.style().standardIcon(QStyle.SP_DirIcon), "Open Downloads Folder")
+        open_folder_action = menu.addAction(QIcon("assets/folder.svg"), "Open Downloads Folder")
         menu.addSeparator()
-        hide_action = menu.addAction(self.style().standardIcon(QStyle.SP_TitleBarMinButton), "Hide Main Window")
+        hide_action = menu.addAction(QIcon("assets/hide.svg"), "Hide Main Window")
         menu.addSeparator()
-        exit_action = menu.addAction(self.style().standardIcon(QStyle.SP_DialogCloseButton), "Exit")
+        exit_action = menu.addAction(QIcon("assets/exit.svg"), "Exit")
         
         action = menu.exec_(self.mapToGlobal(event.pos()))
         
-        if action == open_folder_action:
+        if action and action.parentWidget() == select_pc_menu:
+            self.selected_target_ip = action.text()
+            self.select_pc_requested.emit(self.selected_target_ip)
+        elif action == open_folder_action:
             self.open_downloads_requested.emit()
         elif action == hide_action:
             self.hide_requested.emit()

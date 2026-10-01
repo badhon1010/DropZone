@@ -36,8 +36,10 @@ def main():
             QMessageBox.warning(None, "No Peers", "No other DropZone clients found on the network.")
             return
             
-        target_ip = peers[0]
-        if len(peers) > 1:
+        selected_ip = getattr(widget, 'selected_target_ip', None)
+        target_ip = selected_ip if selected_ip in peers else peers[0]
+        
+        if len(peers) > 1 and not (selected_ip in peers):
             item, ok = QInputDialog.getItem(None, "Select Peer", "Choose peer to send to:", peers, 0, False)
             if ok and item:
                 target_ip = item
