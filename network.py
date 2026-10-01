@@ -34,7 +34,15 @@ class NetworkManager(QObject):
         self.download_dir = download_dir
         self.peers = {}  # ip: {'last_seen': time, 'nickname': str}
         
-        self.config_path = os.path.join(download_dir, "config.json")
+        # Save config in the OS AppData folder (or fallback to user home)
+        appdata_dir = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), 'DropZone')
+        if not os.path.exists(appdata_dir):
+            try:
+                os.makedirs(appdata_dir)
+            except:
+                pass
+                
+        self.config_path = os.path.join(appdata_dir, "config.json")
         self.nickname = socket.gethostname()
         self.load_config()
         
